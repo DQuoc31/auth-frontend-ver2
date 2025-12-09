@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { RegisterRequest, LoginRequest, AuthResponse, ProfileResponse } from '../services/api'
-import { authAPI, getCurrentUser, isAuthenticated } from '../services/api'
+import { authAPI, isAuthenticated } from '../services/api'
 
 export const useRegister = () => {
   const queryClient = useQueryClient()
@@ -76,7 +76,6 @@ export const useUser = () => {
         return null
       }
     },
-    //initialData: getCurrentUser,
     staleTime: 5 * 60 * 1000, // 5 phút
 
     retry: false, 

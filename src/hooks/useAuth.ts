@@ -10,6 +10,7 @@ export const useRegister = () => {
     onSuccess: (data) => {
       // Lưu token và user vào localStorage
       localStorage.setItem('token', data.token)
+      if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken)
       localStorage.setItem('user', JSON.stringify(data.user))
       
       // Invalidate queries để refetch user data
@@ -31,6 +32,7 @@ export const useLogin = () => {
     onSuccess: (data) => {
       // Lưu token và user vào localStorage
       localStorage.setItem('token', data.token)
+      if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken)
       localStorage.setItem('user', JSON.stringify(data.user))
       
       // Invalidate queries để refetch user data
@@ -51,6 +53,7 @@ export const useLogout = () => {
     authAPI.logout()
     localStorage.removeItem('token'); 
     localStorage.removeItem('user'); 
+    localStorage.removeItem('refreshToken'); 
     queryClient.clear()
     window.location.href = '/login'
   }

@@ -10,6 +10,9 @@ export const api = axios.create({
   },
 })
 
+// Separate client for auth-related calls (so refresh doesn't trigger interceptor loop)
+const authClient = axios.create({ baseURL: API_BASE_URL })
+
 // Request interceptor để thêm token
 api.interceptors.request.use(
   (config) => {
@@ -30,13 +33,46 @@ api.interceptors.response.use(
   (error) => {
     const originalRequest = error.config
     if (error.response?.status === 401) {
-      
-      if (originalRequest && originalRequest.url?.includes('/auth/login')) {
+      // don't try to refresh for login/refresh endpoints
+      if (originalRequest && (originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/auth/refresh'))) {
         return Promise.reject(error)
       }
+
+      // attempt refresh once
+      if (!originalRequest._retry) {
+        originalRequest._retry = true
+        const refreshToken = localStorage.getItem('refreshToken')
+        if (refreshToken) {
+          return authClient.post('/auth/refresh', { refreshToken })
+            .then(res => {
+              const data = res.data as AuthResponse
+              if (data?.token) {
+                localStorage.setItem('token', data.token)
+              }
+              if (data?.refreshToken) {
+                localStorage.setItem('refreshToken', data.refreshToken)
+              }
+              // set header and retry original request
+              originalRequest.headers = originalRequest.headers || {}
+              originalRequest.headers.Authorization = `Bearer ${data.token}`
+              return api(originalRequest)
+            })
+            .catch(() => {
+              localStorage.removeItem('token')
+              localStorage.removeItem('user')
+              localStorage.removeItem('refreshToken')
+              if (window.location.pathname !== '/login') {
+                window.location.href = '/login'
+              }
+              return Promise.reject(error)
+            })
+        }
+      }
+
+      // fallback: clear and redirect
       localStorage.removeItem('token')
       localStorage.removeItem('user')
-  
+      localStorage.removeItem('refreshToken')
       if (window.location.pathname !== '/login') {
         window.location.href = '/login'
       }
@@ -60,6 +96,7 @@ export interface AuthResponse {
   message: string
   user: User
   token: string
+  refreshToken?: string
 }
 
 export interface ProfileResponse {
@@ -92,6 +129,11 @@ export const authAPI = {
     return response.data
   },
 
+  refresh: async (refreshToken: string): Promise<AuthResponse> => {
+    const response = await api.post('/auth/refresh', { refreshToken })
+    return response.data
+  },
+
   getProfile: async (): Promise<ProfileResponse> => {
     const response = await api.get('/auth/profile')
     return response.data
@@ -105,6 +147,7 @@ export const authAPI = {
   logout: () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
+    localStorage.removeItem('refreshToken')
   }
 }
 

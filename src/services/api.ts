@@ -58,15 +58,17 @@ export interface LoginRequest {
 
 export interface AuthResponse {
   message: string
-  user: {
-    _id: string
-    email: string
-    createdAt: string
-  }
+  user: User
   token: string
 }
 
 export interface ProfileResponse {
+  _id: string
+  email: string
+  createdAt: string
+}
+
+export interface User {
   _id: string
   email: string
   createdAt: string

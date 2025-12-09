@@ -76,8 +76,11 @@ export const useUser = () => {
         return null
       }
     },
-    initialData: getCurrentUser,
+    //initialData: getCurrentUser,
     staleTime: 5 * 60 * 1000, // 5 phút
+
+    retry: false, 
+    refetchOnWindowFocus: false,
   })
 }
 
